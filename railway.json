@@ -1,0 +1,25 @@
+# Railway Deployment Configuration
+# This file helps Railway understand your project structure
+
+version: "2"
+
+services:
+  backend:
+    name: fleet-backend
+    dockerfile: backend/Dockerfile
+    healthcheck:
+      path: /health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    env:
+      NODE_ENV: production
+    volumes:
+      - /app/uploads
+      - /app/certificates
+
+  frontend:
+    name: fleet-frontend
+    dockerfile: frontend/Dockerfile
+    env:
+      NODE_ENV: production
