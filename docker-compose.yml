@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: fleet-db
+    environment:
+      POSTGRES_USER: fleetuser
+      POSTGRES_PASSWORD: fleetpass123
+      POSTGRES_DB: fleet_inventory
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fleet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleetuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fleet-backend
+    environment:
+      DATABASE_URL: postgresql://fleetuser:fleetpass123@postgres:5432/fleet_inventory
+      JWT_SECRET: your-secret-key-change-in-production
+      PORT: 5000
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fleet-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/certificates:/app/certificates
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fleet-frontend
+    environment:
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - fleet-network
+
+volumes:
+  postgres_data:
+
+networks:
+  fleet-network:
+    driver: bridge

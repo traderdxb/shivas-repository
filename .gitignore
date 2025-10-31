@@ -36,3 +36,16 @@ yarn-error.log*
 .vercel
 .vscode
 .env*.local
+
+# Fleet App Specific
+dist/
+*.db
+*.sqlite
+prisma/migrations/
+uploads/*
+!uploads/.gitkeep
+certificates/*
+!certificates/.gitkeep
+logs/
+*.log
+.idea/

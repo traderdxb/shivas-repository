@@ -1,0 +1,331 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  installations      VehicleAssignment[] @relation("InstalledBy")
+  addedAssignments   VehicleAssignment[] @relation("AddedBy")
+  replacements       Replacement[]
+  removals           Removal[]
+  scheduledJobs      JobSchedule[]
+  activityLogs       ActivityLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  ACCOUNTS
+  SUPPORT
+  SALES
+  VIEWER
+}
+
+model Device {
+  id           String         @id @default(uuid())
+  model        String
+  imei         String         @unique
+  serialNumber String?
+  ownership    Ownership
+  status       DeviceStatus   @default(AVAILABLE)
+  addedDate    DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relations
+  assignments       VehicleAssignment[]
+  replacementsOld   Replacement[]       @relation("OldDevice")
+  replacementsNew   Replacement[]       @relation("NewDevice")
+
+  @@map("devices")
+}
+
+enum DeviceStatus {
+  AVAILABLE
+  ASSIGNED
+  REMOVED
+  AVAILABLE_FOR_TRANSFER
+  FAULTY
+}
+
+enum Ownership {
+  OWNED
+  LEASING
+}
+
+model SIM {
+  id           String      @id @default(uuid())
+  brand        String
+  simNumber    String      @unique
+  serialNumber String?
+  status       SIMStatus   @default(AVAILABLE)
+  ownership    Ownership
+  addedDate    DateTime    @default(now())
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  assignments VehicleAssignment[]
+
+  @@map("sims")
+}
+
+enum SIMStatus {
+  AVAILABLE
+  ASSIGNED
+  REMOVED
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  phone     String?
+  email     String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  assignments  VehicleAssignment[]
+  renewals     Renewal[]
+
+  @@map("clients")
+}
+
+model Vehicle {
+  id            String   @id @default(uuid())
+  make          String
+  model         String
+  plateNumber   String   @unique
+  chassisNumber String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  assignments VehicleAssignment[]
+  removals    Removal[]
+
+  @@map("vehicles")
+}
+
+model VehicleAssignment {
+  id                String    @id @default(uuid())
+  jobType           JobType
+  deviceId          String
+  simId             String?
+  vehicleId         String
+  clientId          String
+  platform          String
+  installationDate  DateTime  @default(now())
+  activationDate    DateTime
+  certificateExpiry DateTime
+  subscriptionExpiry DateTime
+  month             String
+  location          String
+  accessories       Json?     // Array of accessories with details
+  remarks           String?
+  addedBy           String
+  installedBy       String?
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  device      Device   @relation(fields: [deviceId], references: [id])
+  sim         SIM?     @relation(fields: [simId], references: [id])
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  client      Client   @relation(fields: [clientId], references: [id])
+  addedByUser User     @relation("AddedBy", fields: [addedBy], references: [id])
+  installer   User?    @relation("InstalledBy", fields: [installedBy], references: [id])
+
+  replacements Replacement[]
+  renewals     Renewal[]
+
+  @@map("vehicle_assignments")
+}
+
+enum JobType {
+  NEW_INSTALLATION
+  REMOVAL
+  DEVICE_REPLACEMENT
+  TRANSFER_INSTALLATION
+}
+
+model Replacement {
+  id                  String   @id @default(uuid())
+  assignmentId        String
+  oldDeviceId         String
+  newDeviceId         String
+  reason              String
+  replacementDate     DateTime @default(now())
+  replacedBy          String
+  remarks             String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  assignment VehicleAssignment @relation(fields: [assignmentId], references: [id])
+  oldDevice  Device            @relation("OldDevice", fields: [oldDeviceId], references: [id])
+  newDevice  Device            @relation("NewDevice", fields: [newDeviceId], references: [id])
+  user       User              @relation(fields: [replacedBy], references: [id])
+
+  @@map("replacements")
+}
+
+model Removal {
+  id          String   @id @default(uuid())
+  vehicleId   String
+  deviceId    String?
+  simId       String?
+  reason      String
+  removalDate DateTime @default(now())
+  removedBy   String
+  remarks     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  user    User    @relation(fields: [removedBy], references: [id])
+
+  @@map("removals")
+}
+
+model Renewal {
+  id                String    @id @default(uuid())
+  assignmentId      String
+  clientId          String
+  renewalType       RenewalType
+  originalExpiry    DateTime
+  renewalDate       DateTime?
+  newExpiry         DateTime?
+  status            RenewalStatus @default(UPCOMING)
+  remarks           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  assignment VehicleAssignment @relation(fields: [assignmentId], references: [id])
+  client     Client            @relation(fields: [clientId], references: [id])
+
+  @@map("renewals")
+}
+
+enum RenewalType {
+  CERTIFICATE
+  SUBSCRIPTION
+  PLATFORM
+}
+
+enum RenewalStatus {
+  UPCOMING
+  DUE
+  OVERDUE
+  RENEWED
+}
+
+model PendingTask {
+  id          String         @id @default(uuid())
+  taskType    TaskType
+  description String
+  vehicleInfo Json?
+  clientInfo  Json?
+  priority    Priority       @default(MEDIUM)
+  status      TaskStatus     @default(PENDING)
+  assignedTo  String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  remarks     String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("pending_tasks")
+}
+
+enum TaskType {
+  NEW_INSTALLATION
+  TRANSFER_INSTALLATION
+  REMOVAL
+  RECHECK
+  RENEWAL
+  SUPPORT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model JobSchedule {
+  id            String      @id @default(uuid())
+  taskId        String?
+  technicianId  String
+  scheduledDate DateTime
+  scheduledTime String
+  jobDetails    Json
+  whatsappSent  Boolean     @default(false)
+  status        TaskStatus  @default(PENDING)
+  remarks       String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  technician User @relation(fields: [technicianId], references: [id])
+
+  @@map("job_schedules")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String
+  module      String
+  details     Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
+
+model StaticData {
+  id        String   @id @default(uuid())
+  category  String   // 'device_model', 'sim_brand', 'location', 'installer', 'platform', 'added_by'
+  value     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, value])
+  @@map("static_data")
+}
