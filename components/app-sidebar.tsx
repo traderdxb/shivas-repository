@@ -73,6 +73,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarHistory user={user} />
+        <div className="px-4 pb-4">
+          <Link
+            href="/connections"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            onClick={() => setOpenMobile(false)}
+          >
+            Connections
+          </Link>
+        </div>
       </SidebarContent>
       <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
     </Sidebar>
