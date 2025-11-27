@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { genSaltSync, hashSync } from 'bcrypt-ts';
-import { and, asc, desc, eq, gt, gte } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, lte } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
@@ -15,6 +15,12 @@ import {
   type Message,
   message,
   vote,
+  holdingSnapshot,
+  type HoldingSnapshot,
+  portfolioTransaction,
+  type PortfolioTransaction,
+  performanceMetric,
+  type PerformanceMetric,
 } from './schema';
 import { BlockKind } from '@/components/block';
 
@@ -25,6 +31,15 @@ import { BlockKind } from '@/components/block';
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
+
+type WhereExpression = ReturnType<typeof eq>;
+
+function combineConditions(conditions: Array<WhereExpression | undefined>) {
+  const filtered = conditions.filter(Boolean) as Array<WhereExpression>;
+  if (!filtered.length) return undefined;
+  if (filtered.length === 1) return filtered[0];
+  return and(...filtered);
+}
 
 export async function getUser(email: string): Promise<Array<User>> {
   try {
@@ -325,6 +340,99 @@ export async function updateChatVisiblityById({
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
   } catch (error) {
     console.error('Failed to update chat visibility in database');
+    throw error;
+  }
+}
+
+interface PortfolioQueryFilters {
+  userId: string;
+  startDate?: Date;
+  endDate?: Date;
+  accountIds?: Array<string>;
+  assetTypes?: Array<string>;
+}
+
+export async function getHoldingSnapshots(
+  filters: PortfolioQueryFilters,
+): Promise<Array<HoldingSnapshot>> {
+  const { userId, startDate, endDate, accountIds, assetTypes } = filters;
+
+  try {
+    const where = combineConditions([
+      eq(holdingSnapshot.userId, userId),
+      startDate ? gte(holdingSnapshot.snapshotDate, startDate) : undefined,
+      endDate ? lte(holdingSnapshot.snapshotDate, endDate) : undefined,
+      accountIds?.length
+        ? inArray(holdingSnapshot.accountId, accountIds)
+        : undefined,
+      assetTypes?.length
+        ? inArray(holdingSnapshot.assetType, assetTypes)
+        : undefined,
+    ]);
+
+    const baseQuery = db.select().from(holdingSnapshot);
+    const query = where ? baseQuery.where(where) : baseQuery;
+
+    return await query.orderBy(asc(holdingSnapshot.snapshotDate));
+  } catch (error) {
+    console.error('Failed to get holding snapshots from database', error);
+    throw error;
+  }
+}
+
+export async function getPerformanceMetrics(
+  filters: PortfolioQueryFilters & { metrics?: Array<string> },
+): Promise<Array<PerformanceMetric>> {
+  const { userId, startDate, endDate, accountIds, assetTypes, metrics } = filters;
+
+  try {
+    const where = combineConditions([
+      eq(performanceMetric.userId, userId),
+      startDate ? gte(performanceMetric.recordedAt, startDate) : undefined,
+      endDate ? lte(performanceMetric.recordedAt, endDate) : undefined,
+      accountIds?.length
+        ? inArray(performanceMetric.accountId, accountIds)
+        : undefined,
+      assetTypes?.length
+        ? inArray(performanceMetric.assetType, assetTypes)
+        : undefined,
+      metrics?.length ? inArray(performanceMetric.metric, metrics) : undefined,
+    ]);
+
+    const baseQuery = db.select().from(performanceMetric);
+    const query = where ? baseQuery.where(where) : baseQuery;
+
+    return await query.orderBy(asc(performanceMetric.recordedAt));
+  } catch (error) {
+    console.error('Failed to get performance metrics from database', error);
+    throw error;
+  }
+}
+
+export async function getPortfolioTransactions(
+  filters: PortfolioQueryFilters,
+): Promise<Array<PortfolioTransaction>> {
+  const { userId, startDate, endDate, accountIds, assetTypes } = filters;
+
+  try {
+    const where = combineConditions([
+      eq(portfolioTransaction.userId, userId),
+      startDate ? gte(portfolioTransaction.transactedAt, startDate) : undefined,
+      endDate ? lte(portfolioTransaction.transactedAt, endDate) : undefined,
+      accountIds?.length
+        ? inArray(portfolioTransaction.accountId, accountIds)
+        : undefined,
+      assetTypes?.length
+        ? inArray(portfolioTransaction.assetType, assetTypes)
+        : undefined,
+    ]);
+
+    const baseQuery = db.select().from(portfolioTransaction);
+    const query = where ? baseQuery.where(where) : baseQuery;
+
+    return await query.orderBy(asc(portfolioTransaction.transactedAt));
+  } catch (error) {
+    console.error('Failed to get portfolio transactions from database', error);
     throw error;
   }
 }
