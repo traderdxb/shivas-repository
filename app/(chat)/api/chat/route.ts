@@ -9,7 +9,7 @@ import {
 } from 'ai';
 import { z } from 'zod';
 
-import { auth, signIn } from '@/app/(auth)/auth';
+import { auth } from '@/app/(auth)/auth';
 import { customModel } from '@/lib/ai';
 import { models } from '@/lib/ai/models';
 import { rateLimiter } from '@/lib/rate-limit';
@@ -68,38 +68,10 @@ export async function POST(request: Request) {
   }: { id: string; messages: Array<Message>; modelId: string } =
     await request.json();
 
-  let session = await auth();
-
-  // If no session exists, create an anonymous session
-  if (!session?.user) {
-    try {
-      const result = await signIn('credentials', {
-        redirect: false,
-      });
-
-      if (result?.error) {
-        console.error('Failed to create anonymous session:', result.error);
-        return new Response('Failed to create anonymous session', {
-          status: 500,
-        });
-      }
-
-      session = await auth();
-
-      if (!session?.user) {
-        console.error('Failed to get session after creation');
-        return new Response('Failed to create session', { status: 500 });
-      }
-    } catch (error) {
-      console.error('Error creating anonymous session:', error);
-      return new Response('Failed to create anonymous session', {
-        status: 500,
-      });
-    }
-  }
+  const session = await auth();
 
   if (!session?.user?.id) {
-    return new Response('Failed to create session', { status: 500 });
+    return new Response('Unauthorized', { status: 401 });
   }
 
   // Apply rate limiting
@@ -1088,24 +1060,16 @@ export async function DELETE(request: Request) {
     return new Response('Not Found', { status: 404 });
   }
 
-  let session = await auth();
-
-  // If no session exists, create an anonymous session
-  if (!session?.user) {
-    await signIn('credentials', {
-      redirect: false,
-    });
-    session = await auth();
-  }
+  const session = await auth();
 
   if (!session?.user?.id) {
-    return new Response('Failed to create session', { status: 500 });
+    return new Response('Unauthorized', { status: 401 });
   }
 
   try {
     const chat = await getChatById({ id });
 
-    if (chat.userId !== session.user.id) {
+    if (!chat || chat.userId !== session.user.id) {
       return new Response('Unauthorized', { status: 401 });
     }
 

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
-import { Button } from '@/components/ui/button';
+import { OAuthButtonGroup } from '@/components/oauth-button-group';
 
 import { login, type LoginActionState } from '../actions';
 
@@ -40,17 +40,6 @@ export default function Page() {
     formAction(formData);
   };
 
-  // const handleAnonymousLogin = async () => {
-  //   try {
-  //     await signIn('credentials', {
-  //       redirect: false,
-  //     });
-  //     router.refresh();
-  //   } catch (error) {
-  //     toast.error('Failed to continue as guest');
-  //   }
-  // };
-
   return (
     <div className="flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
       <div className="w-full max-w-md overflow-hidden rounded-2xl flex flex-col gap-12">
@@ -67,19 +56,13 @@ export default function Page() {
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
-              {/* <div className="relative flex justify-center text-xs uppercase">
+              <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">
-                  Or
+                  Or continue with
                 </span>
-              </div> */}
+              </div>
             </div>
-            {/* <Button
-              variant="outline"
-              onClick={handleAnonymousLogin}
-              type="button"
-            >
-              Continue as Guest
-            </Button> */}
+            <OAuthButtonGroup />
           </div>
           <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
             {"Don't have an account? "}

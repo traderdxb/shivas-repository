@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
+import { OAuthButtonGroup } from '@/components/oauth-button-group';
 
 import { register, type RegisterActionState } from '../actions';
 
@@ -53,6 +54,19 @@ export default function Page() {
         </div>
         <AuthForm action={handleSubmit} defaultEmail={email}>
           <SubmitButton isSuccessful={isSuccessful}>Sign Up</SubmitButton>
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or sign up with
+                </span>
+              </div>
+            </div>
+            <OAuthButtonGroup />
+          </div>
           <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
             {'Already have an account? '}
             <Link
