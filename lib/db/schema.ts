@@ -10,6 +10,8 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  doublePrecision,
+  integer,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -114,3 +116,53 @@ export const suggestion = pgTable(
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
+
+export const holdingSnapshot = pgTable('HoldingSnapshot', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => user.id),
+  accountId: varchar('accountId', { length: 64 }).notNull(),
+  assetId: varchar('assetId', { length: 64 }).notNull(),
+  assetType: varchar('assetType', { length: 32 }).notNull().default('equity'),
+  quantity: doublePrecision('quantity').notNull().default(0),
+  price: doublePrecision('price').notNull().default(0),
+  value: doublePrecision('value').notNull().default(0),
+  snapshotDate: timestamp('snapshotDate').notNull(),
+  currency: varchar('currency', { length: 8 }).default('USD'),
+});
+
+export type HoldingSnapshot = InferSelectModel<typeof holdingSnapshot>;
+
+export const portfolioTransaction = pgTable('PortfolioTransaction', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => user.id),
+  accountId: varchar('accountId', { length: 64 }).notNull(),
+  assetId: varchar('assetId', { length: 64 }).notNull(),
+  assetType: varchar('assetType', { length: 32 }).notNull().default('equity'),
+  side: varchar('side', { length: 16 }).notNull(),
+  quantity: doublePrecision('quantity').notNull().default(0),
+  price: doublePrecision('price').notNull().default(0),
+  notional: doublePrecision('notional').notNull().default(0),
+  transactedAt: timestamp('transactedAt').notNull(),
+});
+
+export type PortfolioTransaction = InferSelectModel<typeof portfolioTransaction>;
+
+export const performanceMetric = pgTable('PerformanceMetric', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => user.id),
+  accountId: varchar('accountId', { length: 64 }),
+  assetId: varchar('assetId', { length: 64 }),
+  assetType: varchar('assetType', { length: 32 }),
+  metric: varchar('metric', { length: 64 }).notNull(),
+  value: doublePrecision('value').notNull().default(0),
+  windowDays: integer('windowDays'),
+  recordedAt: timestamp('recordedAt').notNull(),
+});
+
+export type PerformanceMetric = InferSelectModel<typeof performanceMetric>;
