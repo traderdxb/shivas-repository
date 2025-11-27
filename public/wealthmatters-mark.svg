@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wm-gradient" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22d3ee" />
+      <stop offset="0.5" stop-color="#6366f1" />
+      <stop offset="1" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#wm-gradient)" />
+  <path
+    d="M19.5 19H26L31.2 34.5L36.8 19H43.2L49 44.5H42.8L39.8 30.3L34.6 44.5H28.2L23 30.3L19.8 44.5H15L19.5 19Z"
+    fill="white"
+    opacity="0.95"
+  />
+</svg>
