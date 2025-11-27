@@ -35,14 +35,134 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
-export async function createUser(email: string, password: string) {
+export async function getUserById(id: string): Promise<User | null> {
+  try {
+    const [record] = await db.select().from(user).where(eq(user.id, id));
+    return record ?? null;
+  } catch (error) {
+    console.error('Failed to get user by id from database');
+    throw error;
+  }
+}
+
+export async function createUser(email: string, password: string, name?: string) {
   const salt = genSaltSync(10);
   const hash = hashSync(password, salt);
 
   try {
-    return await db.insert(user).values({ email, password: hash });
+    return await db.insert(user).values({ email, password: hash, name });
   } catch (error) {
     console.error('Failed to create user in database');
+    throw error;
+  }
+}
+
+export async function upsertOAuthUser({
+  email,
+  name,
+  image,
+  provider,
+  providerAccountId,
+}: {
+  email: string;
+  name?: string | null;
+  image?: string | null;
+  provider: string;
+  providerAccountId?: string | null;
+}): Promise<User> {
+  try {
+    const [existingUser] = await getUser(email);
+
+    if (existingUser) {
+      await db
+        .update(user)
+        .set({
+          name: name ?? existingUser.name,
+          image: image ?? existingUser.image,
+          provider,
+          providerAccountId,
+        })
+        .where(eq(user.id, existingUser.id));
+
+      const [updatedUser] = await getUser(email);
+      // biome-ignore lint: Forbidden non-null assertion.
+      return updatedUser!;
+    }
+
+    const [newUser] = await db
+      .insert(user)
+      .values({
+        email,
+        name,
+        image,
+        provider,
+        providerAccountId,
+      })
+      .returning();
+
+    // biome-ignore lint/style/noNonNullAssertion: ensured by returning clause.
+    return newUser!;
+  } catch (error) {
+    console.error('Failed to upsert OAuth user in database');
+    throw error;
+  }
+}
+
+export async function setUserMfaSecret({
+  userId,
+  secretHash,
+}: {
+  userId: string;
+  secretHash: string;
+}): Promise<User | null> {
+  try {
+    const [updatedUser] = await db
+      .update(user)
+      .set({ mfaSecretHash: secretHash, mfaEnabled: false })
+      .where(eq(user.id, userId))
+      .returning();
+
+    return updatedUser ?? null;
+  } catch (error) {
+    console.error('Failed to set MFA secret in database');
+    throw error;
+  }
+}
+
+export async function enableUserMfa({
+  userId,
+}: {
+  userId: string;
+}): Promise<User | null> {
+  try {
+    const [updatedUser] = await db
+      .update(user)
+      .set({ mfaEnabled: true })
+      .where(eq(user.id, userId))
+      .returning();
+
+    return updatedUser ?? null;
+  } catch (error) {
+    console.error('Failed to enable MFA for user in database');
+    throw error;
+  }
+}
+
+export async function disableUserMfa({
+  userId,
+}: {
+  userId: string;
+}): Promise<User | null> {
+  try {
+    const [updatedUser] = await db
+      .update(user)
+      .set({ mfaEnabled: false, mfaSecretHash: null })
+      .where(eq(user.id, userId))
+      .returning();
+
+    return updatedUser ?? null;
+  } catch (error) {
+    console.error('Failed to disable MFA for user in database');
     throw error;
   }
 }

@@ -11,15 +11,42 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnRegister = nextUrl.pathname.startsWith('/register');
-      const isOnLogin = nextUrl.pathname.startsWith('/login');
+      const pathname = nextUrl.pathname;
+      const isOnRegister = pathname.startsWith('/register');
+      const isOnLogin = pathname.startsWith('/login');
+      const isOnMfaVerify = pathname.startsWith('/mfa/verify');
+      const isOnMfaSetup = pathname.startsWith('/mfa/setup');
+      const isAuthApiRoute = pathname.startsWith('/api/auth');
+      const requiresMfa =
+        isLoggedIn && auth?.user && (auth.user as any).mfaEnabled;
+      const hasVerifiedMfa = Boolean(
+        isLoggedIn && auth?.user && (auth.user as any).mfaVerified,
+      );
 
-      // Redirect authenticated users away from auth pages
-      if (isLoggedIn && (isOnLogin || isOnRegister)) {
-        return Response.redirect(new URL('/', nextUrl as unknown as URL));
+      if (isAuthApiRoute) {
+        return true;
       }
 
-      // Allow access to everything
+      if (!isLoggedIn && !(isOnLogin || isOnRegister)) {
+        return Response.redirect(new URL('/login', nextUrl));
+      }
+
+      if (isLoggedIn && (isOnLogin || isOnRegister)) {
+        return Response.redirect(new URL('/', nextUrl));
+      }
+
+      if (requiresMfa && !hasVerifiedMfa && !isOnMfaVerify) {
+        return Response.redirect(new URL('/mfa/verify', nextUrl));
+      }
+
+      if ((!requiresMfa || hasVerifiedMfa) && isOnMfaVerify) {
+        return Response.redirect(new URL('/', nextUrl));
+      }
+
+      if (!isLoggedIn && isOnMfaSetup) {
+        return Response.redirect(new URL('/login', nextUrl));
+      }
+
       return true;
     },
   },
