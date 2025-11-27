@@ -1,0 +1,16 @@
+<svg width="220" height="48" viewBox="0 0 220 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wm-word" x1="0" y1="0" x2="220" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14b8a6" />
+      <stop offset="0.6" stop-color="#6366f1" />
+      <stop offset="1" stop-color="#f472b6" />
+    </linearGradient>
+  </defs>
+  <rect width="220" height="48" rx="12" fill="url(#wm-word)" opacity="0.08" />
+  <text x="16" y="32" fill="#111827" font-family="'Inter', 'Segoe UI', sans-serif" font-size="24" font-weight="600">
+    WealthMatters
+  </text>
+  <text x="165" y="32" fill="#0f172a" font-family="'Inter', 'Segoe UI', sans-serif" font-size="16" font-weight="500">
+    IQ
+  </text>
+</svg>

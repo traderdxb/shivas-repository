@@ -8,10 +8,13 @@ import { DeepResearchProvider } from '@/lib/deep-research-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://extract.chat'),
-  title: 'Extract Chat - by Firecrawl',
+  metadataBase: new URL('https://wealthmatters.ai'),
+  title: 'WealthMatters Dashboard',
   description:
-    'Extract Chat allows you to extract information from any website with the help of an AI chatbot.',
+    'WealthMatters surfaces live allocation intelligence, filters, and exports across your managed accounts.',
+  icons: {
+    icon: '/wealthmatters-mark.svg',
+  },
 };
 
 export const viewport = {
@@ -59,7 +62,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased">
+      <body className="bg-muted/20 antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
